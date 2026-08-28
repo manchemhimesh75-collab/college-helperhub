@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { GraduationCap, Mail, Lock, User, Building, BookOpen, Eye, EyeOff, AlertCircle, ChevronRight } from "lucide-react";
+import { GraduationCap, Mail, Lock, User, Building, BookOpen, Eye, EyeOff, AlertCircle, ChevronRight, CheckCircle, Shield, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "react-hot-toast";
+import { detectCollegeFromEmail, validatePasswordStrength } from "@/lib/utils/college-detection";
 
 interface College {
   id: string;
@@ -197,6 +199,17 @@ export default function RegisterForm() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
+    // Auto-detect college from email domain
+    if (field === "email" && value.includes("@")) {
+      const detected = detectCollegeFromEmail(value);
+      if (detected) {
+        // Find matching college in our list
+        const match = colleges.find(c => c.name === detected.name || c.code === detected.code);
+        if (match) {
+          setFormData(prev => ({ ...prev, collegeId: match.id }));
+        }
+      }
+    }
   };
 
   const validateStep = (step: number) => {
@@ -207,7 +220,12 @@ export default function RegisterForm() {
       if (!formData.email) newErrors.email = "Email is required";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email format";
       if (!formData.password) newErrors.password = "Password is required";
-      else if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters";
+      else {
+        const strength = validatePasswordStrength(formData.password);
+        if (!strength.valid) {
+          newErrors.password = "Password must contain: " + strength.errors.join(", ");
+        }
+      }
       if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
     }
 
@@ -358,6 +376,40 @@ export default function RegisterForm() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {formData.password && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Password Strength</span>
+                    <span className={`font-medium ${
+                      validatePasswordStrength(formData.password).strength === 'weak' ? 'text-red-500' :
+                      validatePasswordStrength(formData.password).strength === 'medium' ? 'text-yellow-500' : 'text-green-500'
+                    }`}>
+                      {validatePasswordStrength(formData.password).strength.charAt(0).toUpperCase() + validatePasswordStrength(formData.password).strength.slice(1)}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={Math.max(0, Math.min(100, 
+                      validatePasswordStrength(formData.password).strength === 'weak' ? 25 :
+                      validatePasswordStrength(formData.password).strength === 'medium' ? 60 : 100
+                    ))} 
+                    className="h-1.5" 
+                  />
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    {validatePasswordStrength(formData.password).errors.map((err, i) => (
+                      <span key={i} className="flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        {err}
+                      </span>
+                    ))}
+                    {validatePasswordStrength(formData.password).valid && (
+                      <span className="flex items-center gap-1 text-green-500">
+                        <CheckCircle className="h-3 w-3" />
+                        Strong password!
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -385,13 +437,34 @@ export default function RegisterForm() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="collegeId">Select Your College</Label>
+              {formData.collegeId && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <Shield className="h-4 w-4 text-green-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                      College Auto-Detected
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-500">
+                      {colleges.find(c => c.id === formData.collegeId)?.name || "Detected from email domain"}
+                    </p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleInputChange("collegeId", "")}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    Change
+                  </Button>
+                </div>
+              )}
               <Select
                 value={formData.collegeId}
                 onValueChange={(value) => handleInputChange("collegeId", value)}
                 disabled={isLoading}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Search and select your college..." />
+                  <SelectValue placeholder={formData.collegeId ? "Auto-detected - click Change to modify" : "Search and select your college..."} />
                 </SelectTrigger>
                 <SelectContent position="popper">
                   {loadingColleges ? (

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { GraduationCap, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { GraduationCap, Mail, Lock, Eye, EyeOff, AlertCircle, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,6 @@ export default function LoginForm() {
     if (!email) newErrors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Invalid email format";
     if (!password) newErrors.password = "Password is required";
-    else if (password.length < 6) newErrors.password = "Password must be at least 6 characters";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -135,12 +134,17 @@ export default function LoginForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Separator className="w-full" />
-          <p className="text-sm text-muted-foreground text-center">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-primary font-medium hover:underline">
-              Create one
+          <div className="flex flex-col gap-2">
+            <Link href="/register">
+              <Button variant="outline" className="w-full gap-2" size="lg">
+                <UserPlus className="h-4 w-4" />
+                Create New Account
+              </Button>
             </Link>
-          </p>
+            <p className="text-sm text-muted-foreground text-center">
+              or <Link href="/register" className="text-primary font-medium hover:underline">Sign up with college email</Link>
+            </p>
+          </div>
         </CardFooter>
       </Card>
 
