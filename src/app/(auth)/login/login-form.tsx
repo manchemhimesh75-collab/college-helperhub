@@ -134,17 +134,12 @@ export default function LoginForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Separator className="w-full" />
-          <div className="flex flex-col gap-2">
-            <Link href="/register">
-              <Button variant="outline" className="w-full gap-2" size="lg">
-                <UserPlus className="h-4 w-4" />
-                Create New Account
-              </Button>
-            </Link>
-            <p className="text-sm text-muted-foreground text-center">
-              or <Link href="/register" className="text-primary font-medium hover:underline">Sign up with college email</Link>
-            </p>
-          </div>
+          <Link href="/register">
+            <Button variant="outline" className="w-full gap-2" size="lg">
+              <UserPlus className="h-4 w-4" />
+              Create New Account
+            </Button>
+          </Link>
         </CardFooter>
       </Card>
 

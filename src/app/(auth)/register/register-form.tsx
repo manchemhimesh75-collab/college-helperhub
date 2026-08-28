@@ -44,18 +44,17 @@ interface Semester {
   semester_number: number;
 }
 
-interface Division {
+interface Semester {
   id: string;
-  name: string;
-  code: string;
+  label: string;
+  semester_number: number;
 }
 
 const steps = [
   { number: 1, title: "Account", description: "Email & password" },
   { number: 2, title: "College", description: "Select your college" },
   { number: 3, title: "Course", description: "Course & branch" },
-  { number: 4, title: "Academic", description: "Year, semester, division" },
-  { number: 5, title: "Details", description: "Enrollment & roll number" },
+  { number: 4, title: "Academic", description: "Year & semester" },
 ];
 
 export default function RegisterForm() {
@@ -74,9 +73,6 @@ export default function RegisterForm() {
     branchId: "",
     academicYearId: "",
     semesterId: "",
-    divisionId: "",
-    enrollmentNumber: "",
-    rollNumber: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -87,14 +83,12 @@ export default function RegisterForm() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [divisions, setDivisions] = useState<Division[]>([]);
 
   const [loadingColleges, setLoadingColleges] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [loadingYears, setLoadingYears] = useState(false);
   const [loadingSemesters, setLoadingSemesters] = useState(false);
-  const [loadingDivisions, setLoadingDivisions] = useState(false);
 
   const fetchColleges = async () => {
     setLoadingColleges(true);
@@ -115,8 +109,7 @@ export default function RegisterForm() {
     setBranches([]);
     setAcademicYears([]);
     setSemesters([]);
-    setDivisions([]);
-    setFormData(prev => ({ ...prev, courseId: "", branchId: "", academicYearId: "", semesterId: "", divisionId: "" }));
+    setFormData(prev => ({ ...prev, courseId: "", branchId: "", academicYearId: "", semesterId: "" }));
     try {
       const res = await fetch(`/api/courses?college_id=${collegeId}`);
       const data = await res.json();
@@ -133,8 +126,7 @@ export default function RegisterForm() {
     setBranches([]);
     setAcademicYears([]);
     setSemesters([]);
-    setDivisions([]);
-    setFormData(prev => ({ ...prev, branchId: "", academicYearId: "", semesterId: "", divisionId: "" }));
+    setFormData(prev => ({ ...prev, branchId: "", academicYearId: "", semesterId: "" }));
     try {
       const res = await fetch(`/api/branches?course_id=${courseId}`);
       const data = await res.json();
@@ -150,8 +142,7 @@ export default function RegisterForm() {
     setLoadingYears(true);
     setAcademicYears([]);
     setSemesters([]);
-    setDivisions([]);
-    setFormData(prev => ({ ...prev, academicYearId: "", semesterId: "", divisionId: "" }));
+    setFormData(prev => ({ ...prev, academicYearId: "", semesterId: "" }));
     try {
       const res = await fetch(`/api/academic-years?branch_id=${branchId}`);
       const data = await res.json();
@@ -166,8 +157,7 @@ export default function RegisterForm() {
   const fetchSemesters = async (academicYearId: string) => {
     setLoadingSemesters(true);
     setSemesters([]);
-    setDivisions([]);
-    setFormData(prev => ({ ...prev, semesterId: "", divisionId: "" }));
+    setFormData(prev => ({ ...prev, semesterId: "" }));
     try {
       const res = await fetch(`/api/semesters?academic_year_id=${academicYearId}`);
       const data = await res.json();
@@ -176,21 +166,6 @@ export default function RegisterForm() {
       console.error("Failed to fetch semesters:", error);
     } finally {
       setLoadingSemesters(false);
-    }
-  };
-
-  const fetchDivisions = async (semesterId: string) => {
-    setLoadingDivisions(true);
-    setDivisions([]);
-    setFormData(prev => ({ ...prev, divisionId: "" }));
-    try {
-      const res = await fetch(`/api/divisions?semester_id=${semesterId}`);
-      const data = await res.json();
-      if (data.divisions) setDivisions(data.divisions);
-    } catch (error) {
-      console.error("Failed to fetch divisions:", error);
-    } finally {
-      setLoadingDivisions(false);
     }
   };
 
@@ -241,12 +216,6 @@ export default function RegisterForm() {
     if (step === 4) {
       if (!formData.academicYearId) newErrors.academicYearId = "Please select your academic year";
       if (!formData.semesterId) newErrors.semesterId = "Please select your semester";
-      if (!formData.divisionId) newErrors.divisionId = "Please select your division";
-    }
-
-    if (step === 5) {
-      if (!formData.enrollmentNumber.trim()) newErrors.enrollmentNumber = "Enrollment number is required";
-      if (!formData.rollNumber.trim()) newErrors.rollNumber = "Roll number is required";
     }
 
     setErrors(newErrors);
@@ -306,9 +275,6 @@ export default function RegisterForm() {
   }
   if (formData.academicYearId && semesters.length === 0 && !loadingSemesters) {
     fetchSemesters(formData.academicYearId);
-  }
-  if (formData.semesterId && divisions.length === 0 && !loadingDivisions) {
-    fetchDivisions(formData.semesterId);
   }
 
   const renderStep = () => {
@@ -598,78 +564,6 @@ export default function RegisterForm() {
                 </SelectContent>
               </Select>
               {errors.semesterId && <p className="text-sm text-red-600" role="alert">{errors.semesterId}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="divisionId">Division</Label>
-              <Select
-                value={formData.divisionId}
-                onValueChange={(value) => handleInputChange("divisionId", value)}
-                disabled={isLoading || loadingDivisions || !formData.semesterId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={formData.semesterId ? "Select division..." : "Select semester first"} />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  {loadingDivisions ? (
-                    <SelectItem value="" disabled>Loading divisions...</SelectItem>
-                  ) : !formData.semesterId ? (
-                    <SelectItem value="" disabled>Please select a semester first</SelectItem>
-                  ) : (
-                    divisions.map((div) => (
-                      <SelectItem key={div.id} value={div.id}>
-                        {div.name} ({div.code})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {errors.divisionId && <p className="text-sm text-red-600" role="alert">{errors.divisionId}</p>}
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="enrollmentNumber">Enrollment Number</Label>
-              <div className="relative">
-                <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  id="enrollmentNumber"
-                  placeholder="Your enrollment number"
-                  value={formData.enrollmentNumber}
-                  onChange={(e) => handleInputChange("enrollmentNumber", e.target.value)}
-                  error={errors.enrollmentNumber}
-                  className="pl-10"
-                  disabled={isLoading}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rollNumber">Roll Number</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  id="rollNumber"
-                  placeholder="Your roll number"
-                  value={formData.rollNumber}
-                  onChange={(e) => handleInputChange("rollNumber", e.target.value)}
-                  error={errors.rollNumber}
-                  className="pl-10"
-                  disabled={isLoading}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg bg-muted/50 border">
-              <p className="text-sm text-muted-foreground">
-                <strong>Note:</strong> These details will be used to auto-personalize documents. You can update them anytime in your profile.
-              </p>
             </div>
           </div>
         );
